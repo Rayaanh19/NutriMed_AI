@@ -9,7 +9,7 @@ export default function Header() {
           <Link to="/" className="nav-brand">AI Nutrition</Link>
           <div className="nav-links">
             <Link to="/">Generate</Link>
-            <a href="https://ollama.com" target="_blank" rel="noreferrer">Ollama</a>
+            <a href="https://aistudio.google.com/" target="_blank" rel="noreferrer">Gemini API</a>
           </div>
         </nav>
         <h1 className="brand">AI Nutrition Planner</h1>

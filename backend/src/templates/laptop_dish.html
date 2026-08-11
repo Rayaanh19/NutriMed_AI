@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{NAME}} - Nutrition & Recipe</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    {{STYLE}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="glass-card">
+      <div class="header">
+        <div class="logo">NutriMed AI - Laptop View</div>
+        <button class="btn" onclick="window.print()">Save PDF / Print</button>
+      </div>
+      
+      <div class="food-details-grid">
+        <div class="nutrition-wheel-card">
+          <div class="nutrition-wheel">
+            <svg class="nutrition-wheel-svg" viewBox="0 0 36 36">
+              <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="3.5" />
+              <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="var(--primary)" stroke-width="3.5" stroke-dasharray="{{P_PERCENT}}, 100" />
+              <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="var(--secondary)" stroke-width="3.5" stroke-dashoffset="-{{P_PERCENT}}" stroke-dasharray="{{C_PERCENT}}, 100" />
+              <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="var(--accent)" stroke-width="3.5" stroke-dashoffset="-{{P_OFFSET}}" stroke-dasharray="{{F_PERCENT}}, 100" />
+            </svg>
+            <div class="nutrition-wheel-value">
+              <span class="wheel-number">{{CALORIES}}</span>
+              <span class="wheel-label">kcal</span>
+            </div>
+          </div>
+          
+          <div class="legend-item" style="color: var(--primary);">
+            <span>Protein:</span> <span>{{PROTEIN}}g ({{P_PERCENT}}%)</span>
+          </div>
+          <div class="legend-item" style="color: var(--secondary);">
+            <span>Carbs:</span> <span>{{CARBS}}g ({{C_PERCENT}}%)</span>
+          </div>
+          <div class="legend-item" style="color: var(--accent);">
+            <span>Fat:</span> <span>{{FAT}}g ({{F_PERCENT}}%)</span>
+          </div>
+        </div>
+
+        <div class="content">
+          <h3>{{NAME}}</h3>
+          <p style="font-style: italic; color: var(--text-muted); font-size: 1rem; margin-bottom: 1.5rem;">{{DESCRIPTION}}</p>
+          
+          {{SUITABILITY_HTML}}
+          
+          <h4>Ingredients</h4>
+          <ul>
+            {{INGREDIENTS}}
+          </ul>
+          
+          <h4>Instructions</h4>
+          <ol>
+            {{RECIPE}}
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

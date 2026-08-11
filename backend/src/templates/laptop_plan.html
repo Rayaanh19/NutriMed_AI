@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Personalized NutriMed AI Meal Plan</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    {{STYLE}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="glass-card">
+      <div class="header">
+        <div class="logo">NutriMed AI - Laptop View</div>
+        <button class="btn" onclick="window.print()">Save PDF / Print</button>
+      </div>
+      <div class="content">
+        {{RENDERED_HTML}}
+      </div>
+    </div>
+  </div>
+</body>
+</html>

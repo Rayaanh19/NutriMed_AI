@@ -1,14 +1,14 @@
 # Code Explanation
 
 ## Overview
-- **Purpose**: Generate personalized meal plans using an LLM (Ollama) with a React frontend and an Express backend.
+- **Purpose**: Generate personalized meal plans using Google Gemini API with a React frontend and an Express backend.
 - **Tech stack**: React + Vite (`frontend/`), Node.js + Express (`backend/`), optional Docker Compose (`docker-compose.yml`).
 
 ## High-level Architecture
 ```mermaid
 flowchart LR
   UI[Frontend (React/Vite)] -- /api/* --> API[Backend (Express)]
-  API -- chat --> OLLAMA[(Ollama LLM)]
+  API -- chat --> GEMINI[(Google Gemini API)]
 ```
 
 - **Frontend** (`frontend/`):
@@ -18,40 +18,39 @@ flowchart LR
 - **Backend** (`backend/`):
   - Entry: `backend/src/index.js` starts Express, sets JSON parsing, CORS, and routes under `/api`.
   - Health check: `GET /api/health` returns `{ status: 'ok' }`.
-  - Meal generation route: `backend/src/routes/generateMeals.js` validates input with `Joi`, builds a prompt, calls `chatWithOllama()` and returns the model output.
-  - Ollama client: `backend/src/ollamaClient.js` reads `OLLAMA_HOST` (default `http://localhost:11434`) and `OLLAMA_MODEL` (default `llama3.2`), and posts to `/api/chat` with a simple system+user message.
+  - Meal generation route: `backend/src/routes/generateMeals.js` validates input with `Joi`, builds a prompt, calls `streamChatWithGemini()` and streams the model output.
+  - Gemini client: `backend/src/geminiClient.js` configures the Google Gen AI SDK client, reads `GEMINI_API_KEY` and `GEMINI_MODEL` (default `gemini-3.5-flash`), and handles content generation/streaming.
 
 - **Docker** (`docker-compose.yml`):
-  - `ollama` service exposes `11434`.
-  - `api` builds `./backend`, exposes `5000`, links to `ollama` via `OLLAMA_HOST=http://ollama:11434`.
+  - `api` builds `./backend`, exposes `5000`, receives `GEMINI_API_KEY` and `GEMINI_MODEL` from env variables.
   - `web` builds `./frontend`, serves static build via a web server on port `3000`.
 
 ## Key Files
 - `backend/src/index.js`: Express app setup and server listen.
 - `backend/src/routes/generateMeals.js`: Input schema, prompt builder, route handler.
-- `backend/src/ollamaClient.js`: Axios client to Ollama Chat API.
+- `backend/src/geminiClient.js`: Google Gen AI SDK integration for text, vision, and streaming.
 - `frontend/vite.config.js`: Vite dev server port and API proxy.
-- `docker-compose.yml`: Multi-service orchestration for `ollama`, `api`, `web`.
+- `docker-compose.yml`: Multi-service orchestration for `api`, `web`.
 
 ## Request Flow
 1. User submits preferences in the frontend.
 2. Frontend calls `POST /api/generate-meals` with JSON body.
 3. Backend validates with Joi and builds a domain prompt.
-4. Backend calls Ollama Chat (`/api/chat`) with `model=OLLAMA_MODEL`.
+4. Backend calls Gemini Developer API using the SDK (with `model=GEMINI_MODEL`).
 5. Response content is returned to the frontend and rendered as markdown.
 
 ## Environment Variables
 - Backend:
   - `PORT` (default `5000`).
-  - `OLLAMA_HOST` (default `http://localhost:11434`).
-  - `OLLAMA_MODEL` (default `llama3.2`).
+  - `GEMINI_API_KEY` (Required API key from Google AI Studio).
+  - `GEMINI_MODEL` (default `gemini-3.5-flash`).
 
 ## Error Handling
 - Validation errors return `400` with Joi `details`.
-- Upstream errors (e.g., Ollama not reachable) return `500` with `details`.
+- Upstream errors (e.g., Gemini API not reachable) return `500` with `details`.
 
 ## Extensibility Tips
 - Add more routes in `backend/src/routes/` and mount in `index.js`.
 - Adjust prompt composition in `buildPrompt()` to change tone/format.
-- Swap models by setting `OLLAMA_MODEL`.
+- Swap models by setting `GEMINI_MODEL`.
 - Add auth/middleware by extending Express setup before routes.

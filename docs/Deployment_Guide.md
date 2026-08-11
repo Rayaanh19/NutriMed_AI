@@ -1,130 +1,133 @@
-# Deployment Guide
+# Deployment & Development Guide
 
-## Overview
-This guide explains how to run and deploy the app in two ways:
-- Docker Compose (recommended for all-in-one local/host deployment)
-- Local development without Docker
+This guide explains how to build, run, and deploy the AI-Based Personalized Nutrition and Recipe Generator application.
 
-The stack consists of:
-- Frontend: React + Vite (`frontend/`)
-- Backend: Node.js + Express (`backend/`)
-- LLM: Ollama (pulls model `llama3.2` by default)
+## System Architecture Overview
+
+The system is composed of:
+1. **Express Backend** (`backend/`):
+   - Handles API routing, user request validation (via Joi), prompt assembly, and integration with the Google Gemini API.
+   - Serves custom-tailored dish visualization pages dynamically (`/api/dishes/:name`).
+2. **React Frontend** (`frontend/`):
+   - A Vite-powered SPA containing a sleek glassmorphism UI dashboard, custom dietary planning questionnaires, and camera/file-based plate scanning elements.
+3. **Expo Mobile Frontend** (`expo-frontend/`):
+   - A cross-platform React Native mobile app utilizing Expo Router, featuring local profile management, visual food scans, and QR code sharing.
+4. **AI Core**:
+   - Google Gemini API (via `@google/genai`) for processing meal generation queries and analyzing photo uploads.
+
+---
 
 ## Prerequisites
-- Node.js 18+ and npm
-- Git (optional)
-- For Docker path: Docker Desktop (Windows/macOS) or Docker Engine + Docker Compose
-- For local path: Ollama installed and running locally
+
+- **Node.js**: Version 18.x or later.
+- **npm**: Version 9.x or later.
+- **Docker & Docker Compose**: (Required for Docker-based deployment)
+- **Google Gemini API Key**: Obtain one for free from [Google AI Studio](https://aistudio.google.com/).
+
+---
 
 ## Environment Variables
-Backend uses the following variables (with defaults):
-- `PORT` (default `5000`)
-- `OLLAMA_HOST` (default `http://localhost:11434`)
-- `OLLAMA_MODEL` (default `llama3.2`)
 
-When using Docker Compose, `api` is configured with `OLLAMA_HOST=http://ollama:11434` and `OLLAMA_MODEL=llama3.2`.
+### Backend Configuration
+Create a `.env` file in the `/backend` folder with the following variables:
 
-## Option A: Run with Docker Compose (Recommended)
-1. Install and start Docker Desktop.
-2. From the repository root, run:
-```bash
-docker compose up --build
-```
-3. Open the application:
-- Web (static build): http://localhost:3000
-- API: http://localhost:5000
-- Ollama: http://localhost:11434
+```env
+PORT=5000
+NODE_ENV=development
 
-Notes:
-- First run may take time to pull the `ollama/ollama` image and the LLM model on demand.
-- You can change the model by editing `docker-compose.yml` (`OLLAMA_MODEL`).
-
-### Managing the stack
-- Stop: `Ctrl+C` in the terminal, or `docker compose down`
-- Rebuild after changes: `docker compose up --build`
-- View logs: `docker compose logs -f`
-
-## Option B: Local Development (No Docker)
-### 1) Start Ollama locally
-- Install: https://ollama.com
-- Start the service:
-```bash
-ollama serve
-```
-- (Optional, first run) Pull the default model:
-```bash
-ollama pull llama3.2
-```
-- Verify:
-```bash
-curl http://localhost:11434/api/version
+# Google Gemini API Keys
+GEMINI_API_KEY=your_actual_gemini_api_key
+GEMINI_MODEL=gemini-3.5-flash
 ```
 
-### 2) Start the backend (API)
-From `backend/`:
-```bash
-npm install
-npm run dev
-```
-- The API listens on http://localhost:5000
-- You can override `OLLAMA_HOST` and `OLLAMA_MODEL` via environment variables.
+*Note:* `GEMINI_MODEL` defaults to `gemini-3.5-flash` if left unspecified.
 
-### 3) Start the frontend (UI)
-From `frontend/`:
-```bash
-npm install
-npm run dev
-```
-- The Vite dev server runs on http://localhost:5173
-- Requests to `/api/*` are proxied to `http://localhost:5000` as defined in `frontend/vite.config.js`.
+---
 
-## Production Build without Docker
-If you prefer to build and host manually:
-- Frontend build (generates static files in `frontend/dist/`):
-```bash
-cd frontend
-npm install
-npm run build
-```
-- Serve `frontend/dist/` via a production web server (e.g., Nginx, Netlify, Vercel, or `vite preview`).
-- Backend can be started with `node` or a process manager like PM2:
+## Option A: Deployment with Docker Compose (Recommended)
+
+Docker Compose orchestrates the client and server containers together, matching them up inside a unified local network.
+
+1. Ensure Docker Desktop is active.
+2. In the repository root, create or update a `.env` file containing:
+   ```env
+   GEMINI_API_KEY=your_actual_gemini_api_key
+   ```
+3. Run the compose environment:
+   ```bash
+   docker compose up --build
+   ```
+4. Access the services:
+   - **Frontend (UI)**: [http://localhost:3000](http://localhost:3000)
+   - **Backend API**: [http://localhost:5000](http://localhost:5000)
+
+### Basic Docker Management Commands
+- **Stop services**: `Ctrl+C` or `docker compose down`
+- **Rebuild and restart containers**: `docker compose up --build`
+- **Stream logs**: `docker compose logs -f`
+
+---
+
+## Option B: Local Development (Without Docker)
+
+You can run individual components locally during development for faster hot reloading.
+
+### 1. Launch the Backend API
+Navigate to `/backend`:
 ```bash
 cd backend
 npm install
-npm run start
+# Copy the env template and fill in your Gemini API key
+copy .env.example .env
+# Start the Express server in development mode
+npm run dev
 ```
-- Ensure an Ollama service is reachable by the backend via `OLLAMA_HOST`.
+The backend starts listening at [http://localhost:5000](http://localhost:5000). You can check its health at `/api/health`.
 
-## Health Checks & Verification
-- API health: `GET http://localhost:5000/api/health` → `{ "status": "ok" }`
-- UI running: visit `http://localhost:5173` (dev) or `http://localhost:3000` (Docker)
-- Ollama up: `GET http://localhost:11434/api/version`
-
-## Troubleshooting
-- "ECONNREFUSED 11434": Ollama is not running or not reachable. Start `ollama serve` or bring up the Docker stack.
-- Port conflicts: Change Vite port in `frontend/vite.config.js` or backend `PORT` env var.
-- Slow first response: The model may load on first use; subsequent calls are faster.
-- Docker ‘version is obsolete’ warning: You can remove the `version:` field in `docker-compose.yml` (Compose v2 ignores it).
-
-## Security & Hardening (Production)
-- Put the API behind a reverse proxy (Nginx/Caddy) with TLS.
-- Configure CORS restrictions on the API.
-- Set appropriate timeouts and request size limits.
-- Monitor Ollama and API logs; set resource limits for containers.
-- Consider authentication if exposing the API publicly.
-
-## File Map
-- `backend/`: Express API (`src/index.js`, `src/routes/generateMeals.js`, `src/ollamaClient.js`)
-- `frontend/`: React/Vite app (`vite.config.js`)
-- `docker-compose.yml`: Orchestrates `ollama`, `api`, and `web`
-
-## Change the Model
-- Local dev: set `OLLAMA_MODEL` before starting backend
+### 2. Launch the React Web Frontend
+Navigate to `/frontend`:
 ```bash
-set OLLAMA_MODEL=llama3.2  # Windows PowerShell: $env:OLLAMA_MODEL = "llama3.2"
+cd frontend
+npm install
+npm run dev
 ```
-- Docker: edit `docker-compose.yml` `environment:` for the `api` service.
+The React development server runs at [http://localhost:5173](http://localhost:5173). It is configured to proxy all `/api/*` requests to the local backend port `5000`.
 
-## Versioning
-- Node.js dependencies defined in `backend/package.json` and `frontend/package.json`.
-- Lockfiles are not included here; generate them on `npm install`.
+### 3. Launch the Expo Mobile Frontend
+Navigate to `/expo-frontend`:
+```bash
+cd expo-frontend
+npm install
+npx expo start
+```
+Use the printed QR code to open the app via the Expo Go app on your physical iOS/Android device, or launch it in an emulator/simulator.
+
+---
+
+## Production Build & Manual Hosting
+
+If you want to compile static bundles for manual hosting:
+
+### Web Frontend Compilation
+```bash
+cd frontend
+npm run build
+```
+This command bundles optimized assets into `/frontend/dist/`. These files can be hosted on static hosting services (e.g. Netlify, Vercel, Nginx, or AWS S3).
+
+### Backend Server Daemon
+To deploy the backend permanently, use a process manager like **PM2**:
+```bash
+cd backend
+npm install
+npm install -g pm2
+pm2 start src/index.js --name "nutrition-api"
+```
+
+---
+
+## Health Checks & Diagnostics
+
+- **API Base Route**: `GET http://localhost:5000/api/health` -> Returns `{"status": "ok"}`
+- **Config check**: `GET http://localhost:5000/api/config` -> Returns the backend's local network IP (essential for mobile pairing)
+- **Dish HTML Page**: `GET http://localhost:5000/api/dishes/:name?diseases=Diabetes&allergies=peanuts` -> Renders the custom visual macros layout

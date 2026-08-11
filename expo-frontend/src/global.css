@@ -1,0 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --font-display: 'Outfit', sans-serif;
+  --font-sans: 'Plus Jakarta Sans', sans-serif;
+  
+  --bg-dark: #060814;
+  --primary: #0ea5e9;
+  --secondary: #0d9488;
+  --accent: #ff4e50;
+}
+
+@media print {
+  /* Expand scroll views and containers to show full content on print */
+  div, scrollview, [style*="max-height"], [style*="maxHeight"], [style*="overflow"] {
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+}
