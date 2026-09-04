@@ -109,7 +109,7 @@ export default function DashboardScreen() {
   const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
   
-  const [profile, setProfile] = useState<UserProfile>({
+  const [profile, setProfile] = useState<Partial<UserProfile>>({
     name: 'User',
     age: 30,
     sex: 'male',
@@ -212,29 +212,30 @@ export default function DashboardScreen() {
   };
 
   const handleSkipOnboarding = async () => {
-    const defaultProfile: UserProfile = {
+    const defaultProfile = {
       name: 'User',
       age: 30,
-      sex: 'male',
+      sex: 'male' as const,
       height: 175,
       weight: 70,
       activity: 'moderate',
       diseases: [],
       meatHabit: 'vegetarian'
     };
-    await saveProfile(defaultProfile);
-    setProfile(defaultProfile);
+    const saved = await saveProfile(defaultProfile);
+    setProfile(saved);
     setIsOnboarded(true);
   };
 
   const handleBmiSubmit = async (bmiData: any) => {
     const savedProfile = await getProfile();
-    const base = savedProfile || {};
+    const base: Partial<UserProfile> = savedProfile || {};
 
-    const updated: UserProfile = {
+    const updated = {
+      ...(base.id ? { id: base.id } : {}),
       name: nameStr || base.name || 'User',
       age: parseInt(ageStr, 10) || 30,
-      sex: sex || base.sex || 'male',
+      sex: (sex || base.sex || 'male') as 'male' | 'female' | 'other',
       height: parseFloat(bmiData.height) || 175,
       weight: parseFloat(bmiData.weight) || 70,
       activity: bmiData.activity || 'moderate',
@@ -243,8 +244,8 @@ export default function DashboardScreen() {
       diseases: bmiData.diseases || [],
     };
 
-    await saveProfile(updated);
-    setProfile(updated);
+    const saved = await saveProfile(updated);
+    setProfile(saved);
     setShowBmiModal(false);
     setIsOnboarded(true);
   };
@@ -530,7 +531,7 @@ export default function DashboardScreen() {
 
   // Target Calculations
   const calculateTargets = () => {
-    const { age, sex: userSex, height, weight, activity: userActivity } = profile;
+    const { age = 30, sex: userSex = 'male', height = 175, weight = 70, activity: userActivity = 'moderate' } = profile;
     let bmr = 0;
     if (userSex === 'male') {
       bmr = 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age);
@@ -546,7 +547,7 @@ export default function DashboardScreen() {
       very_active: 1.9,
     };
 
-    const calories = Math.round(bmr * (activityFactors[userActivity] || 1.55));
+    const calories = Math.round(bmr * (activityFactors[userActivity || 'moderate'] || 1.55));
     const protein = Math.round((calories * 0.30) / 4);
     const carbs = Math.round((calories * 0.40) / 4);
     const fat = Math.round((calories * 0.30) / 9);
@@ -723,8 +724,8 @@ export default function DashboardScreen() {
   }
 
   // Render Dashboard
-  const heightM = profile.height / 100;
-  const bmi = profile.weight / (heightM * heightM);
+  const heightM = (profile.height || 175) / 100;
+  const bmi = (profile.weight || 70) / (heightM * heightM);
   const roundedBmi = parseFloat(bmi.toFixed(1));
 
   let bmiClass = 'Normal';
@@ -869,7 +870,7 @@ export default function DashboardScreen() {
           <View style={styles.profileRow}>
             <View style={styles.profileItem}>
               <Text style={styles.profileLabel}>SEX</Text>
-              <Text style={styles.profileVal}>{profile.sex.toUpperCase()}</Text>
+              <Text style={styles.profileVal}>{(profile.sex || 'male').toUpperCase()}</Text>
             </View>
             <View style={styles.profileItem}>
               <Text style={styles.profileLabel}>AGE</Text>

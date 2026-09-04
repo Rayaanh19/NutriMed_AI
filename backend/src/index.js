@@ -37,8 +37,13 @@ app.use('/api', generateMealsRouter);
 app.use('/api', foodAnalysisRouter);
 
 const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, () => {
-  console.log(`API listening on http://localhost:${PORT}`);
-});
-server.timeout = 600000; // 10 minutes
+
+if (!process.env.VERCEL) {
+  const server = app.listen(PORT, () => {
+    console.log(`API listening on http://localhost:${PORT}`);
+  });
+  server.timeout = 600000; // 10 minutes
+}
+
+export default app;
 

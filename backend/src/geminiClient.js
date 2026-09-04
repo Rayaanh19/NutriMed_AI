@@ -1,6 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 
-const getModelName = () => process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+const getModelName = () => process.env.GEMINI_MODEL || 'gemini-3.6-flash';
 
 let ai = null;
 

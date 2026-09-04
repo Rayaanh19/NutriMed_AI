@@ -17,7 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import { getProfile, saveHistoryItem } from '../utils/storage';
+import { getProfile, saveHistoryItem, UserProfile } from '../utils/storage';
 import { getBackendUrl } from '../utils/api';
 
 const initialForm = {
@@ -185,7 +185,7 @@ export default function PlannerScreen() {
 
     try {
       const profile = await getProfile();
-      const base = profile || {};
+      const base: Partial<UserProfile> = profile || {};
 
       const payload = {
         age: Number(base.age) || 30,
