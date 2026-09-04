@@ -64,7 +64,8 @@ function MobileSelect({
       <Modal visible={open} transparent={true} animationType="fade" onRequestClose={() => setOpen(false)}>
         <TouchableWithoutFeedback onPress={() => setOpen(false)}>
           <View style={styles.modalBg}>
-            <View style={[styles.modalContent, { maxHeight: '60%' }]}>
+            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation?.()}>
+              <View style={[styles.modalContent, { maxHeight: '60%' }]}>
               <Text style={[styles.modalTitle, { fontSize: 18, marginBottom: 12 }]}>Select {label}</Text>
               <ScrollView>
                 {options.map((opt) => (
@@ -98,6 +99,7 @@ function MobileSelect({
                 <Text style={styles.btnTextSecondary}>Cancel</Text>
               </Pressable>
             </View>
+          </TouchableWithoutFeedback>
           </View>
         </TouchableWithoutFeedback>
       </Modal>
@@ -586,18 +588,17 @@ export default function DashboardScreen() {
   // Render Onboarding state-driven screen transitions
   if (isOnboarded === false) {
     return (
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <SafeAreaView style={styles.onboardingContainer}>
-          <View style={styles.glowOrbGreen} />
-          <View style={styles.glowOrbBlue} />
+      <SafeAreaView style={styles.onboardingContainer}>
+        <View style={styles.glowOrbGreen} />
+        <View style={styles.glowOrbBlue} />
 
-          {/* Skip button in header */}
-          <View style={styles.skipHeader}>
-            <Pressable style={styles.skipBtn} onPress={handleSkipOnboarding}>
-              <Text style={styles.skipBtnText}>Skip Onboarding</Text>
-              <Ionicons name="arrow-forward" size={14} color="#94a3b8" style={{ marginLeft: 4 }} />
-            </Pressable>
-          </View>
+        {/* Skip button in header */}
+        <View style={styles.skipHeader}>
+          <Pressable style={styles.skipBtn} onPress={handleSkipOnboarding}>
+            <Text style={styles.skipBtnText}>Skip Onboarding</Text>
+            <Ionicons name="arrow-forward" size={14} color="#94a3b8" style={{ marginLeft: 4 }} />
+          </Pressable>
+        </View>
 
           <View style={styles.slideContainer}>
             {/* Slide 1: Welcome */}
@@ -719,8 +720,7 @@ export default function DashboardScreen() {
           </View>
           {renderBmiModal()}
         </SafeAreaView>
-      </TouchableWithoutFeedback>
-    );
+      );
   }
 
   // Render Dashboard
