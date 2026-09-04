@@ -5,7 +5,7 @@ const getModelName = () => process.env.GEMINI_MODEL || 'gemini-3.6-flash';
 let ai = null;
 
 function getClient() {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+  const apiKey = (process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || '').trim();
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY environment variable is not set. Please obtain a valid API key starting with AIzaSy... from Google AI Studio (https://aistudio.google.com/) and set GEMINI_API_KEY in Vercel.');
   }
