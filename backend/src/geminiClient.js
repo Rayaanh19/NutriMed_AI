@@ -6,7 +6,7 @@ let ai = null;
 
 function getClient() {
   if (!ai) {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY || 'AQ.Ab8RN6KVwJfBI4Y9AwwuEOoh4gv13VRgE43xcoIq1t_GUdROfw';
     if (!apiKey) {
       throw new Error('GEMINI_API_KEY environment variable is not set. Please obtain one from Google AI Studio and configure it in your .env file.');
     }
