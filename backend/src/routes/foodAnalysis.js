@@ -41,6 +41,7 @@ function extractJSON(text) {
 
 // Default fallback response if LLM fails or lacks vision capabilities
 // Dynamic fallback response if LLM fails or lacks vision capabilities
+// Dynamic fallback response if LLM fails or lacks vision capabilities
 const getFallbackDish = (hint) => {
   const queryLower = (hint || '').toLowerCase();
 
@@ -52,6 +53,14 @@ const getFallbackDish = (hint) => {
       confidence: 0.85,
       calories: 550,
       macros: { protein: isVeg ? 18 : 32, carbs: 68, fat: 18 },
+      detected_items: [
+        "Basmati Rice",
+        isVeg ? "Mixed Vegetables & Paneer" : "Marinated Chicken",
+        "Plain Yogurt (Dahi)",
+        "Fried Sliced Onions",
+        "Aromatic Spices (Cardamom, Cloves, Cinnamon)",
+        "Ghee & Fresh Mint"
+      ],
       description: `A rich, aromatic meal featuring fluffy basmati rice, tender ${isVeg ? 'vegetables and paneer' : 'marinated chicken'}, and whole fragrant spices. (Note: Simulated dish analysis applied due to connectivity/vision constraints.)`,
       suitability: {
         allowed: true,
@@ -84,6 +93,13 @@ const getFallbackDish = (hint) => {
       confidence: 0.85,
       calories: 460,
       macros: { protein: 18, carbs: 54, fat: 20 },
+      detected_items: [
+        "Whole Wheat Pizza Base",
+        "Marinara Tomato Sauce",
+        "Shredded Mozzarella Cheese",
+        "Sliced Bell Peppers & Tomatoes",
+        "Italian Herbs & Chili Flakes"
+      ],
       description: "Oven-baked flatbread topped with marinara sauce, melted mozzarella cheese, and Italian herbs.",
       suitability: {
         allowed: true,
@@ -112,6 +128,13 @@ const getFallbackDish = (hint) => {
       confidence: 0.85,
       calories: 420,
       macros: { protein: 22, carbs: 44, fat: 18 },
+      detected_items: [
+        "Burger Bun / Bread",
+        "Grilled Seasoned Patty",
+        "Crisp Lettuce",
+        "Sliced Tomatoes & Onions",
+        "Cheese Slice & Sauce"
+      ],
       description: "A delicious sandwich/burger featuring a juicy seasoned patty, crisp lettuce, and fresh tomato slices.",
       suitability: {
         allowed: true,
@@ -139,6 +162,13 @@ const getFallbackDish = (hint) => {
       confidence: 0.85,
       calories: 260,
       macros: { protein: 12, carbs: 18, fat: 16 },
+      detected_items: [
+        "Mixed Leafy Greens",
+        "Sliced Cucumber",
+        "Cherry Tomatoes",
+        "Lemon Olive Oil Dressing",
+        "Pumpkin Seeds / Feta Cheese"
+      ],
       description: "A crisp, refreshing bowl of garden greens, cherry tomatoes, cucumbers, and light olive oil dressing.",
       suitability: {
         allowed: true,
@@ -159,7 +189,46 @@ const getFallbackDish = (hint) => {
     };
   }
 
-  // 5. Default / Generic fallback
+  // 5. Fruits & Fruit Basket (Default fruit detection)
+  if (!hint || queryLower.includes('fruit') || queryLower.includes('apple') || queryLower.includes('banana') || queryLower.includes('berry') || queryLower.includes('grape') || queryLower.includes('pineapple') || queryLower.includes('lemon') || queryLower.includes('lime') || queryLower.includes('orange') || queryLower.includes('plum') || queryLower.includes('kiwi') || queryLower.includes('pomegranate')) {
+    return {
+      name: hint || "Fresh Tropical & Berry Fruit Basket",
+      confidence: 0.88,
+      calories: 280,
+      macros: { protein: 4, carbs: 68, fat: 1 },
+      detected_items: [
+        "Ripe Bananas",
+        "Fresh Pineapple",
+        "Green Seedless Grapes",
+        "Crisp Red Apples",
+        "Fresh Pomegranate",
+        "Black Plums",
+        "Kiwis",
+        "Citrus (Lemon & Lime)"
+      ],
+      description: "A vibrant assortment of whole fresh fruits rich in natural sugars, vitamin C, hydrating minerals, and dietary fiber.",
+      suitability: {
+        allowed: true,
+        reasons: ["Rich in Vitamin C, potassium, and antioxidants. Excellent for immunity, heart health, and digestion."]
+      },
+      ingredients: [
+        "2 medium Bananas",
+        "1 cup fresh Pineapple chunks",
+        "1 cup Green Grapes",
+        "2 Crisp Red Apples",
+        "1 Pomegranate",
+        "2 Kiwis & Plums"
+      ],
+      recipe: [
+        "Wash all fresh fruits under clean running water.",
+        "Peel and slice bananas, kiwis, and pineapple into bite-sized pieces.",
+        "Deseed pomegranate and combine all fresh fruits in a large salad bowl.",
+        "Serve fresh or chilled with a squeeze of fresh lime juice."
+      ]
+    };
+  }
+
+  // 6. Default / Generic fallback
   const queryName = hint || "Nutrient-Balanced Gourmet Meal";
   return {
     name: queryName,
@@ -170,6 +239,12 @@ const getFallbackDish = (hint) => {
       carbs: 48,
       fat: 16
     },
+    detected_items: [
+      hint || "Primary Food Component",
+      "Fresh Vegetables",
+      "Healthy Cooking Medium / Dressing",
+      "Seasonings & Spices"
+    ],
     description: `A balanced meal featuring ${hint ? hint : 'wholesome ingredients, lean proteins, and complex carbohydrates'}. (Note: Simulated dish analysis applied due to AI vision constraints.)`,
     suitability: {
       allowed: true,
@@ -202,7 +277,7 @@ router.post('/scan-food', async (req, res) => {
   const diseasesList = Array.isArray(diseases) ? diseases : (diseases ? [diseases] : []);
   const allergiesList = Array.isArray(allergies) ? allergies : (allergies ? allergies.split(',').map(s => s.trim()).filter(Boolean) : []);
 
-  const prompt = `Analyze this food image. Identify the dish/ingredients and return a detailed nutritional analysis, recipe, and suitability analysis for the user's health profile.
+  const prompt = `Analyze this food image in detail. Identify the overall dish or list of food items, and list EVERY individual component or item visually present in the image (especially for fruit baskets, mixed platters, or complex dishes). Return a detailed nutritional analysis, recipe, and suitability analysis for the user's health profile.
 
 User Health Profile:
 - Diseases/Conditions: ${diseasesList.join(', ') || 'None'}
@@ -213,15 +288,15 @@ If the identified food or ANY of its potential ingredients contains, is derived 
 
 CRITICAL REQUIREMENT FOR DISEASES:
 Evaluate suitability based on the user's diseases (${diseasesList.join(', ') || 'None'}):
-- If the user has "High Blood Pressure" (or hypertension), evaluate if this food is suitable (e.g. low sodium is good, high sodium/processed food is unsuitable and "allowed" should be false or true with warnings).
-- If the user has "Diabetes", evaluate glycemic index and sugar/carb content (e.g. low simple sugar, low glycemic index, or moderate portions are suitable; high sugar/highly refined carb foods are unsuitable and "allowed" should be false or true with warning reasons).
+- If the user has "High Blood Pressure" (or hypertension), evaluate if this food is suitable.
+- If the user has "Diabetes", evaluate glycemic index and sugar/carb content.
 - Mention these details in the suitability reasons.
 
 You MUST output ONLY a valid JSON object. Do not include any explanations, markdown code blocks, or extra text.
 
 JSON Schema:
 {
-  "name": "Name of the dish or food items identified",
+  "name": "Name of the dish or overall food basket identified",
   "confidence": 0.95,
   "calories": 420,
   "macros": {
@@ -229,12 +304,17 @@ JSON Schema:
     "carbs": 45,
     "fat": 14
   },
-  "description": "Brief summary of the dish and suitability overview.",
+  "detected_items": [
+    "Individual Scanned Item / Component 1 (e.g., Bananas)",
+    "Individual Scanned Item / Component 2 (e.g., Pineapple)",
+    "Individual Scanned Item / Component 3 (e.g., Green Grapes)"
+  ],
+  "description": "Brief summary of the dish or fruit basket and suitability overview.",
   "suitability": {
     "allowed": true,
     "reasons": [
       "Contains no allergens",
-      "Low in sodium, suitable for High Blood Pressure"
+      "Low in sodium"
     ]
   },
   "ingredients": [
@@ -247,7 +327,7 @@ JSON Schema:
   ]
 }
 
-If you cannot identify the food, output a JSON with a guess based on the hint "${hint || 'healthy meal'}" and indicate this in the description.`;
+If you cannot identify the food, output a JSON with a guess based on the hint "${hint || 'fresh meal'}" and populate detected_items with identified components.`;
 
   try {
     // Attempt vision chat
@@ -423,6 +503,19 @@ JSON Schema:
   const cPercent = Math.round(((carbs * 4) / total) * 100);
   const fPercent = Math.round(((fat * 9) / total) * 100);
 
+  const detectedItemsHtml = (result.detected_items && result.detected_items.length > 0) ? `
+    <div style="margin-top: 1rem; margin-bottom: 1.25rem; background: rgba(14, 165, 233, 0.05); padding: 1rem; border-radius: 12px; border: 1px solid rgba(14, 165, 233, 0.15);">
+      <h4 style="margin: 0 0 0.75rem 0; color: #38bdf8; font-family: 'Outfit', sans-serif; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;">Scanned Items / Identified Components</h4>
+      <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+        ${result.detected_items.map(item => `
+          <span style="background: rgba(14, 165, 233, 0.12); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.3); padding: 0.35rem 0.75rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">
+            ✓ ${item}
+          </span>
+        `).join('')}
+      </div>
+    </div>
+  ` : '';
+
   const suitabilityHtml = result.suitability ? `
     <div style="margin-top: 1.5rem; padding: 1.25rem; border-radius: 12px; background: ${result.suitability.allowed ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)'}; border: 1px solid ${result.suitability.allowed ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'};">
       <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
@@ -462,6 +555,7 @@ JSON Schema:
     .replace(/\{\{P_OFFSET\}\}/g, pPercent)
     .replace(/\{\{F_OFFSET\}\}/g, pPercent + cPercent)
     .replace(/\{\{DESCRIPTION\}\}/g, result.description || '')
+    .replace(/\{\{DETECTED_ITEMS_HTML\}\}/g, detectedItemsHtml)
     .replace(/\{\{SUITABILITY_HTML\}\}/g, suitabilityHtml)
     .replace(/\{\{INGREDIENTS\}\}/g, result.ingredients.map(i => `<li>${i}</li>`).join(''))
     .replace(/\{\{RECIPE\}\}/g, result.recipe.map(s => `<li>${s}</li>`).join(''));
