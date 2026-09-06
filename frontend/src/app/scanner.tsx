@@ -370,6 +370,21 @@ export default function ScannerScreen() {
                 </Pressable>
               </View>
 
+              {/* Scanned Items / Identified Components */}
+              {result.detected_items && result.detected_items.length > 0 && (
+                <View style={styles.detectedContainer}>
+                  <Text style={styles.detectedTitle}>Scanned Items / Identified Components</Text>
+                  <View style={styles.badgeGrid}>
+                    {result.detected_items.map((item: string, idx: number) => (
+                      <View key={idx} style={styles.detectedBadge}>
+                        <MaterialCommunityIcons name="check-circle" size={13} color="#0ea5e9" style={{ marginRight: 4 }} />
+                        <Text style={styles.detectedBadgeText}>{item}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+
               {/* Nutrition Card info */}
               <View style={styles.nutritionCard}>
                 <View style={styles.calorieBox}>
@@ -651,6 +666,43 @@ const styles = StyleSheet.create({
   resetBtnText: {
     color: '#0ea5e9',
     fontSize: 11,
+    fontWeight: '700',
+  },
+  detectedContainer: {
+    backgroundColor: 'rgba(14, 165, 233, 0.06)',
+    borderColor: 'rgba(14, 165, 233, 0.2)',
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 16,
+  },
+  detectedTitle: {
+    fontFamily: 'Outfit',
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#0ea5e9',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  badgeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  detectedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(14, 165, 233, 0.12)',
+    borderColor: 'rgba(14, 165, 233, 0.3)',
+    borderWidth: 1,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+  },
+  detectedBadgeText: {
+    color: '#38bdf8',
+    fontSize: 12,
     fontWeight: '700',
   },
   nutritionCard: {
