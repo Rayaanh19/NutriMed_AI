@@ -1,6 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 
-const getModelName = () => process.env.GEMINI_MODEL || 'gemini-3.6-flash';
+const getModelName = () => process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
 let ai = null;
 
@@ -13,9 +13,10 @@ function getClient() {
 }
 
 function parseImage(imgStr) {
-  const mimeMatch = imgStr.match(/^data:(image\/\w+);base64,/);
+  if (!imgStr) return null;
+  const mimeMatch = imgStr.match(/^data:(image\/[a-zA-Z0-9\+\-\.]+);base64,/);
   const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
-  const data = imgStr.replace(/^data:image\/\w+;base64,/, '');
+  const data = imgStr.includes('base64,') ? imgStr.split('base64,')[1].trim() : imgStr.trim();
   return {
     inlineData: {
       data,
