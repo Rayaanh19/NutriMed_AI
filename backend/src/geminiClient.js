@@ -26,7 +26,7 @@ function parseImage(imgStr) {
 }
 
 /**
- * Standard non-streaming generateContent call
+ * Standard non-streaming generateContent call with model retries
  * @param {string} prompt 
  * @param {string[]} images 
  * @param {string} responseMimeType 
@@ -39,29 +39,53 @@ export async function chatWithGemini(prompt, images = [], responseMimeType = nul
   if (images && images.length > 0) {
     images.forEach(img => {
       if (img) {
-        parts.push(parseImage(img));
+        const parsed = parseImage(img);
+        if (parsed) {
+          parts.push(parsed);
+        }
       }
     });
   }
 
   const config = {
-    systemInstruction: 'You are a helpful nutrition and meal planning assistant.'
+    systemInstruction: 'You are an expert global culinary AI, master chef, and clinical nutritionist. Your job is to accurately identify any dish, meal, street food, beverage, or food item from any culture around the world (Asian, Indian, Italian, Mexican, Middle Eastern, American, African, European, etc.), precisely determine all visual components, and return accurate nutritional metrics, recipes, and health suitability reports.'
   };
 
   if (responseMimeType) {
     config.responseMimeType = responseMimeType;
   }
 
-  const response = await client.models.generateContent({
-    model: getModelName(),
-    contents: [{ role: 'user', parts }],
-    config
-  });
+  const primaryModel = getModelName();
+  const candidateModels = [
+    primaryModel,
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash',
+    'gemini-1.5-pro'
+  ].filter((v, i, a) => a.indexOf(v) === i);
 
-  if (response && response.text) {
-    return response.text;
+  let lastErr = null;
+  for (const model of candidateModels) {
+    try {
+      const response = await client.models.generateContent({
+        model,
+        contents: [{ role: 'user', parts }],
+        config
+      });
+
+      if (response && response.text) {
+        return response.text;
+      }
+    } catch (err) {
+      console.warn(`Gemini API call failed with model ${model}:`, err.message);
+      lastErr = err;
+      if (err.message && (err.message.includes('API key') || err.message.includes('API_KEY'))) {
+        throw err;
+      }
+    }
   }
-  
+
+  if (lastErr) throw lastErr;
   return '';
 }
 
