@@ -26,6 +26,40 @@ export default function ScannerScreen() {
   const [error, setError] = useState('');
   const [result, setResult] = useState<any>(null);
 
+  const getBase64FromAsset = async (asset: ImagePicker.ImagePickerAsset): Promise<string | null> => {
+    if (asset.base64) {
+      if (asset.base64.startsWith('data:')) {
+        return asset.base64;
+      }
+      const mime = asset.mimeType || 'image/jpeg';
+      return `data:${mime};base64,${asset.base64}`;
+    }
+    if (asset.uri && asset.uri.startsWith('data:')) {
+      return asset.uri;
+    }
+    if (asset.uri) {
+      try {
+        const response = await fetch(asset.uri);
+        const blob = await response.blob();
+        return await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            if (typeof reader.result === 'string') {
+              resolve(reader.result);
+            } else {
+              reject(new Error('Failed to convert blob to data URL'));
+            }
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } catch (e) {
+        console.warn('Could not read asset URI as base64 data URL:', e);
+      }
+    }
+    return null;
+  };
+
   const pickImage = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -35,20 +69,25 @@ export default function ScannerScreen() {
       }
 
       const pickerResult = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsEditing: true,
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: Platform.OS !== 'web',
         quality: 0.7,
         base64: true,
       });
 
-      if (!pickerResult.canceled && pickerResult.assets && pickerResult.assets[0].base64) {
-        setImage(`data:image/jpeg;base64,${pickerResult.assets[0].base64}`);
-        setResult(null);
-        setError('');
+      if (!pickerResult.canceled && pickerResult.assets && pickerResult.assets[0]) {
+        const formattedImg = await getBase64FromAsset(pickerResult.assets[0]);
+        if (formattedImg) {
+          setImage(formattedImg);
+          setResult(null);
+          setError('');
+        } else {
+          setError('Failed to extract valid image data.');
+        }
       }
     } catch (e: any) {
       console.error(e);
-      setError('Failed to select image');
+      setError(e.message || 'Failed to select image');
     }
   };
 
@@ -61,19 +100,24 @@ export default function ScannerScreen() {
       }
 
       const captureResult = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
+        allowsEditing: Platform.OS !== 'web',
         quality: 0.7,
         base64: true,
       });
 
-      if (!captureResult.canceled && captureResult.assets && captureResult.assets[0].base64) {
-        setImage(`data:image/jpeg;base64,${captureResult.assets[0].base64}`);
-        setResult(null);
-        setError('');
+      if (!captureResult.canceled && captureResult.assets && captureResult.assets[0]) {
+        const formattedImg = await getBase64FromAsset(captureResult.assets[0]);
+        if (formattedImg) {
+          setImage(formattedImg);
+          setResult(null);
+          setError('');
+        } else {
+          setError('Failed to capture valid image data.');
+        }
       }
     } catch (e: any) {
       console.error(e);
-      setError('Failed to launch camera');
+      setError(e.message || 'Failed to launch camera');
     }
   };
 
@@ -155,7 +199,11 @@ export default function ScannerScreen() {
 
   const handleOpenLink = async (url: string) => {
     try {
-      await WebBrowser.openBrowserAsync(url);
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.open(url, '_blank');
+      } else {
+        await WebBrowser.openBrowserAsync(url);
+      }
     } catch (e) {
       console.error("Failed to open browser", e);
     }
