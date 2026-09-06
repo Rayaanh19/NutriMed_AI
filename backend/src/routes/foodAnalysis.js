@@ -354,44 +354,43 @@ Do not add any extra text or code fences.`;
     }
   }
 
-  const prompt = `Analyze this food image in detail. Identify the overall dish or list of food items, and list EVERY individual component or item visually present in the image (especially for fruit baskets, mixed platters, or complex dishes). Return a detailed nutritional analysis, recipe, and suitability analysis for the user's health profile.
+  const prompt = `You are a world-renowned AI Master Chef, Global Food Vision Specialist, and Clinical Nutritionist.
+Analyze this food image with extreme visual precision.
 
-User Health Profile:
-- Diseases/Conditions: ${diseasesList.join(', ') || 'None'}
-- Allergies: ${allergiesList.join(', ') || 'None'}
+YOUR MANDATE:
+1. Identify the EXACT dish, beverage, platter, or food item shown in the photo, whether it is from Indian, Asian, Italian, Mexican, Middle Eastern, American, African, European, or any global cuisine (e.g. Hyderabadi Chicken Biryani, Mint Lime Mojito, Salmon Sushi Roll, Street Tacos, Pad Thai, Tonkotsu Ramen, Woodfired Pizza, Butter Chicken, Pho, Shawarma, Dim Sum, Garden Salad, Fruit Basket, etc.).
+2. Do NOT use generic terms if a specific dish is recognized. Identify it by its authentic, precise culinary name. If a hint is provided ("${hint}"), use it as context to verify your visual findings.
+3. Visually inspect and list EVERY component, main ingredient, garnish, or side item present in "detected_items" (e.g., ["Aromatic Basmati Rice", "Marinated Spiced Chicken", "Caramelized Fried Onions", "Fresh Mint Leaves", "Cucumber Raita", "Saffron Ghee"]).
+4. Calculate realistic macronutrients and total calories for a standard portion.
+5. Provide a rich culinary description detailing the flavor profile, culinary origin, and health highlights.
+6. Evaluate health suitability for the user's medical profile:
+   - Diseases/Conditions: ${diseasesList.join(', ') || 'None'}
+   - Allergies: ${allergiesList.join(', ') || 'None'}
+   - CRITICAL FOR ALLERGIES: If food contains ${allergiesList.join(', ') || 'None'}, mark "suitability.allowed" as false.
+7. Provide the full authentic ingredients list with measurements and step-by-step preparation/cooking instructions.
 
-CRITICAL REQUIREMENT FOR ALLERGIES:
-If the identified food or ANY of its potential ingredients contains, is derived from, or is cross-contaminated with any of the user's allergies (${allergiesList.join(', ') || 'None'}), you MUST mark "suitability.allowed" as false and state clearly in the reasons that it contains the allergen and MUST BE AVOIDED TOTALLY.
-
-CRITICAL REQUIREMENT FOR DISEASES:
-Evaluate suitability based on the user's diseases (${diseasesList.join(', ') || 'None'}):
-- If the user has "High Blood Pressure" (or hypertension), evaluate if this food is suitable.
-- If the user has "Diabetes", evaluate glycemic index and sugar/carb content.
-- Mention these details in the suitability reasons.
-
-You MUST output ONLY a valid JSON object. Do not include any explanations, markdown code blocks, or extra text.
-
-JSON Schema:
+You MUST output ONLY a valid JSON object matching this schema:
 {
-  "name": "Name of the dish or overall food basket identified",
-  "confidence": 0.95,
-  "calories": 420,
+  "name": "Exact Name of the Identified Dish / Drink",
+  "confidence": 0.98,
+  "calories": 520,
   "macros": {
-    "protein": 22,
-    "carbs": 45,
-    "fat": 14
+    "protein": 28,
+    "carbs": 62,
+    "fat": 16
   },
   "detected_items": [
-    "Individual Scanned Item / Component 1 (e.g., Bananas)",
-    "Individual Scanned Item / Component 2 (e.g., Pineapple)",
-    "Individual Scanned Item / Component 3 (e.g., Green Grapes)"
+    "Identified Visual Component 1",
+    "Identified Visual Component 2",
+    "Identified Visual Component 3",
+    "Identified Visual Component 4"
   ],
-  "description": "Brief summary of the dish or fruit basket and suitability overview.",
+  "description": "Comprehensive culinary description of the dish, flavor profile, and nutritional breakdown.",
   "suitability": {
     "allowed": true,
     "reasons": [
-      "Contains no allergens",
-      "Low in sodium"
+      "Allergy assessment",
+      "Disease health suitability note"
     ]
   },
   "ingredients": [
@@ -399,12 +398,12 @@ JSON Schema:
     "ingredient 2 with amount"
   ],
   "recipe": [
-    "Step 1 to prepare",
-    "Step 2 to prepare"
+    "Step 1 to prepare/cook",
+    "Step 2 to prepare/cook"
   ]
 }
 
-If you cannot identify the food, output a JSON with a guess based on the hint "${hint || 'fresh meal'}" and populate detected_items with identified components.`;
+If you cannot visually identify the dish, output a JSON with your best guess based on the hint "${hint || 'fresh food plate'}" and populate detected_items with identified components.`;
 
   try {
     // Attempt vision chat
