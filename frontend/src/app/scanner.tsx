@@ -26,6 +26,50 @@ export default function ScannerScreen() {
   const [error, setError] = useState('');
   const [result, setResult] = useState<any>(null);
 
+  const compressImageDataUrl = async (
+    dataUrl: string | null,
+    maxWidth = 1024,
+    maxHeight = 1024,
+    quality = 0.7
+  ): Promise<string | null> => {
+    if (!dataUrl) return null;
+    if (Platform.OS !== 'web' || typeof window === 'undefined') {
+      return dataUrl;
+    }
+    return new Promise((resolve) => {
+      const img = new window.Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth || height > maxHeight) {
+          if (width > height) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          } else {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(dataUrl);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        const compressed = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressed);
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+  };
+
   const getBase64FromAsset = async (asset: ImagePicker.ImagePickerAsset): Promise<string | null> => {
     if (asset.base64) {
       if (asset.base64.startsWith('data:')) {
@@ -77,8 +121,9 @@ export default function ScannerScreen() {
 
       if (!pickerResult.canceled && pickerResult.assets && pickerResult.assets[0]) {
         const formattedImg = await getBase64FromAsset(pickerResult.assets[0]);
-        if (formattedImg) {
-          setImage(formattedImg);
+        const compressedImg = await compressImageDataUrl(formattedImg, 1024, 1024, 0.7);
+        if (compressedImg) {
+          setImage(compressedImg);
           setResult(null);
           setError('');
         } else {
@@ -107,8 +152,9 @@ export default function ScannerScreen() {
 
       if (!captureResult.canceled && captureResult.assets && captureResult.assets[0]) {
         const formattedImg = await getBase64FromAsset(captureResult.assets[0]);
-        if (formattedImg) {
-          setImage(formattedImg);
+        const compressedImg = await compressImageDataUrl(formattedImg, 1024, 1024, 0.7);
+        if (compressedImg) {
+          setImage(compressedImg);
           setResult(null);
           setError('');
         } else {
@@ -148,20 +194,29 @@ export default function ScannerScreen() {
       const backendUrl = getBackendUrl();
       const profileData = await getProfile();
 
+      const compressedImage = (await compressImageDataUrl(image, 1024, 1024, 0.7)) || image;
+
       const response = await fetch(`${backendUrl}/api/scan-food`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          image, 
+          image: compressedImage, 
           hint,
           allergies: profileData?.allergies || '',
           diseases: profileData?.diseases || []
         }),
       });
       
-      const data = await response.json();
+      const responseText = await response.text();
+      let data: any;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseErr) {
+        throw new Error(`Server returned invalid response (${response.status}): ${responseText.slice(0, 80)}`);
+      }
+
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to analyze plate image');
+        throw new Error(data.error || data.details || 'Failed to analyze plate image');
       }
 
       clearInterval(interval);
