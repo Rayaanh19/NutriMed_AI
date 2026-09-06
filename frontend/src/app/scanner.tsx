@@ -176,7 +176,10 @@ export default function ScannerScreen() {
   };
 
   const handleScanSubmit = async () => {
-    if (!image) return;
+    if (!image && !hint.trim()) {
+      setError('Please select a plate photo or enter a food title (e.g. Chicken Biryani, Fruit Basket).');
+      return;
+    }
     setLoading(true);
     setError('');
     setProgress(10);
@@ -194,14 +197,14 @@ export default function ScannerScreen() {
       const backendUrl = getBackendUrl();
       const profileData = await getProfile();
 
-      const compressedImage = (await compressImageDataUrl(image, 1024, 1024, 0.7)) || image;
+      const compressedImage = image ? ((await compressImageDataUrl(image, 1024, 1024, 0.7)) || image) : null;
 
       const response = await fetch(`${backendUrl}/api/scan-food`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           image: compressedImage, 
-          hint,
+          hint: hint.trim(),
           allergies: profileData?.allergies || '',
           diseases: profileData?.diseases || []
         }),
@@ -273,7 +276,7 @@ export default function ScannerScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>AI Food Analyzer</Text>
-          <Text style={styles.headerSubtitle}>Identify nutritional profiles & recipes from pictures</Text>
+          <Text style={styles.headerSubtitle}>Analyze nutrition profiles & recipes by photo or food title</Text>
         </View>
 
         <View style={styles.glassCard}>
@@ -282,15 +285,44 @@ export default function ScannerScreen() {
           {/* Hint input */}
           {!result && !loading && (
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Dish Title / Guess Hint (Optional)</Text>
+              <Text style={styles.label}>Dish Title / Food Keyword (Text or Photo Analysis)</Text>
               <TextInput
                 style={styles.input}
                 value={hint}
                 onChangeText={setHint}
-                placeholder="e.g. Chicken breast with white rice, avo toast"
+                placeholder="e.g. Chicken Biryani, Mojito Mocktail, Fruit Bowl"
                 placeholderTextColor="#64748b"
               />
+              
+              {/* Quick suggestion chips */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  {['Chicken Biryani', 'Fresh Fruit Basket', 'Mojito Mocktail', 'Pepperoni Pizza', 'Garden Salad'].map((suggest, idx) => (
+                    <Pressable
+                      key={idx}
+                      style={{
+                        backgroundColor: 'rgba(14, 165, 233, 0.08)',
+                        borderColor: 'rgba(14, 165, 233, 0.2)',
+                        borderWidth: 1,
+                        paddingVertical: 4,
+                        paddingHorizontal: 10,
+                        borderRadius: 14,
+                      }}
+                      onPress={() => setHint(suggest)}
+                    >
+                      <Text style={{ color: '#38bdf8', fontSize: 11, fontWeight: '600' }}>✨ {suggest}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </ScrollView>
             </View>
+          )}
+
+          {/* Text-only Analyze Button (if no image, but text exists) */}
+          {!image && !loading && !result && hint.trim().length > 0 && (
+            <Pressable style={[styles.btn, styles.btnPrimary, { marginBottom: 16 }]} onPress={handleScanSubmit}>
+              <Text style={styles.btnTextPrimary}>Analyze "{hint.trim()}" with AI</Text>
+            </Pressable>
           )}
 
           {/* Image Select Buttons */}
@@ -322,7 +354,7 @@ export default function ScannerScreen() {
               
               <View style={styles.actionRow}>
                 <Pressable style={[styles.btn, styles.btnPrimary]} onPress={handleScanSubmit}>
-                  <Text style={styles.btnTextPrimary}>Analyze with AI</Text>
+                  <Text style={styles.btnTextPrimary}>Analyze Photo with AI</Text>
                 </Pressable>
                 <Pressable style={[styles.btn, styles.btnSecondary]} onPress={resetScanner}>
                   <Text style={styles.btnTextSecondary}>Cancel</Text>
