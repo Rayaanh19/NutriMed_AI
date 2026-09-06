@@ -189,8 +189,45 @@ const getFallbackDish = (hint) => {
     };
   }
 
-  // 5. Fruits & Fruit Basket (Default fruit detection)
-  if (!hint || queryLower.includes('fruit') || queryLower.includes('apple') || queryLower.includes('banana') || queryLower.includes('berry') || queryLower.includes('grape') || queryLower.includes('pineapple') || queryLower.includes('lemon') || queryLower.includes('lime') || queryLower.includes('orange') || queryLower.includes('plum') || queryLower.includes('kiwi') || queryLower.includes('pomegranate')) {
+  // 5. Mocktails, Cocktails, Juices, Smoothies, Drinks
+  if (queryLower.includes('mocktail') || queryLower.includes('cocktail') || queryLower.includes('juice') || queryLower.includes('smoothie') || queryLower.includes('drink') || queryLower.includes('beverage') || queryLower.includes('mojito') || queryLower.includes('shake')) {
+    return {
+      name: hint || "Refreshing Fruit Mocktail / Beverage",
+      confidence: 0.88,
+      calories: 140,
+      macros: { protein: 1, carbs: 34, fat: 0 },
+      detected_items: [
+        "Fresh Fruit Juices / Puree",
+        "Sparkling Soda / Club Soda",
+        "Crushed Ice Cubes",
+        "Fresh Mint Leaves",
+        "Lime Wedges & Citrus Slices",
+        "Agave / Simple Syrup"
+      ],
+      description: "A cooling, refreshing non-alcoholic mocktail made with fresh fruit juice, sparkling water, crushed ice, and fresh mint leaves.",
+      suitability: {
+        allowed: true,
+        reasons: ["Hydrating and refreshing. Monitor sugar intake if managing diabetes."]
+      },
+      ingredients: [
+        "1/2 cup fresh fruit juice (orange/pineapple/cranberry)",
+        "1/2 cup sparkling water or club soda",
+        "4-5 fresh mint leaves",
+        "1 tbsp lime juice",
+        "1 tsp agave or simple syrup",
+        "Crushed ice"
+      ],
+      recipe: [
+        "Muddle fresh mint leaves and lime juice gently in a glass.",
+        "Fill glass with crushed ice.",
+        "Pour fruit juice and top with sparkling soda water.",
+        "Stir gently, garnish with a lime wheel and mint sprig, and serve cold."
+      ]
+    };
+  }
+
+  // 6. Fruits & Fruit Basket
+  if (queryLower.includes('fruit') || queryLower.includes('apple') || queryLower.includes('banana') || queryLower.includes('berry') || queryLower.includes('grape') || queryLower.includes('pineapple') || queryLower.includes('lemon') || queryLower.includes('lime') || queryLower.includes('orange') || queryLower.includes('plum') || queryLower.includes('kiwi') || queryLower.includes('pomegranate')) {
     return {
       name: hint || "Fresh Tropical & Berry Fruit Basket",
       confidence: 0.88,
@@ -228,8 +265,8 @@ const getFallbackDish = (hint) => {
     };
   }
 
-  // 6. Default / Generic fallback
-  const queryName = hint || "Nutrient-Balanced Gourmet Meal";
+  // 7. Default / Generic fallback
+  const queryName = hint || "Assorted Scanned Meal / Plate";
   return {
     name: queryName,
     confidence: 0.85,
@@ -240,12 +277,12 @@ const getFallbackDish = (hint) => {
       fat: 16
     },
     detected_items: [
-      hint || "Primary Food Component",
-      "Fresh Vegetables",
-      "Healthy Cooking Medium / Dressing",
+      hint || "Main Food Component",
+      "Fresh Produce / Vegetables",
+      "Healthy Cooking Medium",
       "Seasonings & Spices"
     ],
-    description: `A balanced meal featuring ${hint ? hint : 'wholesome ingredients, lean proteins, and complex carbohydrates'}. (Note: Simulated dish analysis applied due to AI vision constraints.)`,
+    description: `A balanced meal featuring wholesome ingredients. (Note: Simulated analysis applied due to AI vision constraints.)`,
     suitability: {
       allowed: true,
       reasons: [
@@ -266,16 +303,56 @@ const getFallbackDish = (hint) => {
   };
 };
 
-// Route 1: Scan food image
+// Route 1: Scan food image or text query
 router.post('/scan-food', async (req, res) => {
   const { image, hint, diseases, allergies } = req.body;
 
-  if (!image) {
-    return res.status(400).json({ error: "Missing image data" });
+  if (!image && !hint) {
+    return res.status(400).json({ error: "Please select a plate photo or type a food title to analyze." });
   }
 
   const diseasesList = Array.isArray(diseases) ? diseases : (diseases ? [diseases] : []);
   const allergiesList = Array.isArray(allergies) ? allergies : (allergies ? allergies.split(',').map(s => s.trim()).filter(Boolean) : []);
+
+  // Text-only mode if user didn't upload an image but entered a dish title/hint
+  if (!image && hint) {
+    const textPrompt = `Analyze the food dish/item described as: "${hint}".
+Return detailed nutrition statistics, scanned component items list, quick recipe, and suitability report for the user's health profile.
+
+User Health Profile:
+- Diseases/Conditions: ${diseasesList.join(', ') || 'None'}
+- Allergies: ${allergiesList.join(', ') || 'None'}
+
+Evaluate suitability:
+- Allergies: If it contains ${allergiesList.join(', ') || 'None'}, set "suitability.allowed" to false and explain.
+- Diseases: Assess for conditions like ${diseasesList.join(', ') || 'None'}.
+
+You MUST output ONLY a valid JSON object matching this schema:
+{
+  "name": "${hint}",
+  "confidence": 1.0,
+  "calories": 350,
+  "macros": { "protein": 20, "carbs": 40, "fat": 15 },
+  "detected_items": ["Main Component 1", "Main Component 2", "Seasoning / Side"],
+  "description": "Detailed nutritional summary of the dish.",
+  "suitability": {
+    "allowed": true,
+    "reasons": ["Suitability reason 1"]
+  },
+  "ingredients": ["ingredient 1", "ingredient 2"],
+  "recipe": ["Step 1", "Step 2"]
+}
+Do not add any extra text or code fences.`;
+
+    try {
+      const responseText = await chatWithGemini(textPrompt, [], 'application/json');
+      const parsedData = extractJSON(responseText);
+      return res.json(parsedData);
+    } catch (err) {
+      console.error("Text analysis failed, serving dynamic fallback:", err.message);
+      return res.json(getFallbackDish(hint));
+    }
+  }
 
   const prompt = `Analyze this food image in detail. Identify the overall dish or list of food items, and list EVERY individual component or item visually present in the image (especially for fruit baskets, mixed platters, or complex dishes). Return a detailed nutritional analysis, recipe, and suitability analysis for the user's health profile.
 
